@@ -1,4 +1,6 @@
 let userModel = require('../schemas/users')
+let bcrypt = require('bcrypt')
+
 module.exports = {
     CreateAnUser: async function (username, password, email, role,
         avatarUrl, fullName, status, loginCount
@@ -21,6 +23,13 @@ module.exports = {
         if (!getUser) {
             return false;
         }
+        
+        // Verify password with bcrypt
+        let isValidPassword = bcrypt.compareSync(password, getUser.password);
+        if (!isValidPassword) {
+            return false;
+        }
+        
         return getUser;
     },
     FindUserById: async function (id) {
@@ -28,5 +37,24 @@ module.exports = {
             _id: id,
             isDeleted:false
         }).populate('role')
+    },
+    ChangePassword: async function (userId, oldPassword, newPassword) {
+        // Find user
+        let user = await userModel.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        
+        // Verify old password
+        let isValidPassword = bcrypt.compareSync(oldPassword, user.password);
+        if (!isValidPassword) {
+            throw new Error("Old password is incorrect");
+        }
+        
+        // Update with new password (will be auto-hashed by pre-save hook)
+        user.password = newPassword;
+        await user.save();
+        
+        return { message: "Password changed successfully" };
     }
 }

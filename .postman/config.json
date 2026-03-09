@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "id": "2603c941-630d-4239-bd05-454a637e5772"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [],
+    "collections": [
+      "..\\NNPTUD-C2-API.postman_collection.json"
+    ]
+  }
+}

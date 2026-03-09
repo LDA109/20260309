@@ -3,19 +3,31 @@ var router = express.Router();
 let userController = require('../controllers/users');
 let jwt = require('jsonwebtoken')
 let { checkLogin } = require('../utils/authHandler.js')
+let roleModel = require('../schemas/roles');
 
 /* GET home page. */
 //localhost:3000
 router.post('/register', async function (req, res, next) {
-    let newUser = await userController.CreateAnUser(
-        req.body.username,
-        req.body.password,
-        req.body.email,
-        "69a5462f086d74c9e772b804"
-    )
-    res.send({
-        message: "dang ki thanh cong"
-    })
+    try {
+        // Get USER role from database (default role for registration)
+        let userRole = await roleModel.findOne({ name: 'USER' });
+        if (!userRole) {
+            return res.status(500).send({ message: "USER role not found. Please create it first." });
+        }
+        
+        let newUser = await userController.CreateAnUser(
+            req.body.username,
+            req.body.password,
+            req.body.email,
+            userRole._id
+        )
+        res.send({
+            message: "dang ki thanh cong",
+            userId: newUser._id
+        })
+    } catch (error) {
+        res.status(400).send({ message: error.message })
+    }
 });
 router.post('/login', async function (req, res, next) {
     let result = await userController.QueryByUserNameAndPassword(
@@ -48,6 +60,36 @@ router.post('/logout', checkLogin, function (req, res, next) {
         httpOnly: true
     })
     res.send("da logout ")
+})
+
+router.post('/change-password', checkLogin, async function (req, res, next) {
+    try {
+        let { oldPassword, newPassword } = req.body;
+        
+        // Validate input
+        if (!oldPassword || !newPassword) {
+            return res.status(400).send({ 
+                message: "oldPassword and newPassword are required" 
+            });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).send({ 
+                message: "New password must be at least 6 characters" 
+            });
+        }
+        
+        // Change password
+        let result = await userController.ChangePassword(
+            req.userId, 
+            oldPassword, 
+            newPassword
+        );
+        
+        res.send(result);
+    } catch (error) {
+        res.status(400).send({ message: error.message });
+    }
 })
 
 
